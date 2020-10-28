@@ -1,19 +1,12 @@
+use terminal_size::{terminal_size, Height, Width};
+
 const ITERATIONS: u32 = 20;
 const GOLDEN_RATIO: f64 = 1.61;
 const RADIUS_OF_NO_RETURN: f64 = 2.0;
 const PX_W: u32 = 14;
 const PX_H: u32 = 30;
-const BLOCKS: u32 = 110; // Horizontal blocks of text
-const LINES: u32 = ((BLOCKS * PX_W) as f64 / GOLDEN_RATIO / PX_H as f64) as u32; // Vertical lines
-const WIDTH: u32 = PX_W * BLOCKS; // Screen width
-const HEIGHT: u32 = PX_H * LINES; // Screen height
-
-const VIEWPORT: (f64, f64) = (-0.1, 0.95); // Move the center of the plot
-const VIEWPORT_WIDTH: f64 = 0.1; // Make this smaller for zoom
-const RATIO: f64 = VIEWPORT_WIDTH / WIDTH as f64;
-const VIEWPORT_HEIGHT: f64 = HEIGHT as f64 * RATIO;
-const FROM_X: f64 = -(VIEWPORT_WIDTH / 2.0) + VIEWPORT.0;
-const FROM_Y: f64 = -(VIEWPORT_HEIGHT / 2.0) + VIEWPORT.1;
+const COLS: u32 = 110; // Horizontal blocks of text
+const ROWS: u32 = ((COLS * PX_W) as f64 / GOLDEN_RATIO / PX_H as f64) as u32; // Vertical lines
 
 // Z ^ 2 + C
 fn mandelbrot(x: f64, y: f64) -> u32 {
@@ -40,14 +33,33 @@ fn mandelbrot(x: f64, y: f64) -> u32 {
 const CHARACTERS: [char; 10] = ['@', '%', '#', '*', '+', '=', '-', ':', '.', ' '];
 
 fn main() {
-    println!("╔{}╗", "═".repeat(BLOCKS as usize));
-    for line in 0..LINES {
+    let size = terminal_size();
+    let mut cols: u32 = COLS;
+    let mut rows: u32 = ROWS;
+    if let Some((Width(wcols), Height(hrows))) = size {
+        cols = wcols as u32 - 2;
+        rows = hrows as u32 - 4;
+    } else {
+        println!("Unable to get terminal size");
+    }
+
+    let WIDTH: u32 = PX_W * cols; // Screen width
+    let HEIGHT: u32 = PX_H * rows; // Screen height
+    let VIEWPORT: (f64, f64) = (-0.1, 0.95); // Move the center of the plot
+    let VIEWPORT_WIDTH: f64 = 0.1; // Make this smaller for zoom
+    let RATIO: f64 = VIEWPORT_WIDTH / WIDTH as f64;
+    let VIEWPORT_HEIGHT: f64 = HEIGHT as f64 * RATIO;
+    let FROM_X: f64 = -(VIEWPORT_WIDTH / 2.0) + VIEWPORT.0;
+    let FROM_Y: f64 = -(VIEWPORT_HEIGHT / 2.0) + VIEWPORT.1;
+
+    println!("╔{}╗", "═".repeat(cols as usize));
+    for row in 0..rows {
         let mut buf = String::from("");
-        let pos_y: f64 = (line * PX_H) as f64 + PX_H as f64 / 2.0;
+        let pos_y: f64 = (row * PX_H) as f64 + PX_H as f64 / 2.0;
         let y: f64 = pos_y * RATIO + FROM_Y;
 
-        for block in 0..BLOCKS {
-            let pos_x: f64 = (block * PX_W) as f64 + PX_W as f64 / 2.0;
+        for col in 0..cols {
+            let pos_x: f64 = (col * PX_W) as f64 + PX_W as f64 / 2.0;
             let x: f64 = pos_x * RATIO + FROM_X;
 
             // let i: u32 = ((x * x + y * y).sqrt() / RADIUS_OF_NO_RETURN * 9.0) as u32;
@@ -68,5 +80,5 @@ fn main() {
 
         println!("║{}║", buf);
     }
-    println!("╚{}╝", "═".repeat(BLOCKS as usize));
+    println!("╚{}╝", "═".repeat(cols as usize));
 }
