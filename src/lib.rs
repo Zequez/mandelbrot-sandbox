@@ -56,6 +56,7 @@ impl Universe {
                         row as f64 * ratio_x + x,
                         col as f64 * ratio_y + y,
                         iterations,
+                        RADIUS_OF_NO_RETURN,
                     ) as f64
                         * depth_ratio) as u8,
                 );
@@ -71,14 +72,14 @@ impl Universe {
 }
 
 #[wasm_bindgen]
-pub fn mandelbrot(x: f64, y: f64, iterations: i32) -> i32 {
+pub fn mandelbrot(x: f64, y: f64, iterations: i32, radius: f64) -> i32 {
     let mut it = 0;
     let mut a: f64 = 0.0;
     let mut b: f64 = 0.0;
     let mut a2: f64 = 0.0;
     let mut b2: f64 = 0.0;
 
-    while it < iterations && a2 + b2 < RADIUS_OF_NO_RETURN * RADIUS_OF_NO_RETURN {
+    while it < iterations && a2 + b2 < radius * radius {
         //  Z = (a + bi)
         // C = (x + yi)
         // Z^2 + C
