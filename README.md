@@ -7,3 +7,9 @@ Mandelbrot fractal visualization made in Rust.
 ```
 just dev
 ```
+
+```
+cd www
+yarn
+yarn start
+```

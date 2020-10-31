@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "esnext",
+    "strict": true,
+    "sourceMap": false,
+    "allowJs": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "jsx": "react",
+    "lib": ["dom", "esnext"],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@@/*": ["./*"],
+      "types/*": ["types/*"],
+      "~icons/*": ["node_modules/@fortawesome/fontawesome-free/svgs/*"]
+    }
+  },
+  "include": [
+    "./src/**/*",
+    "./types/**/*",
+    "./node_modules/@fortawesome/fontawesome-free/svgs/*"
+  ]
+}
