@@ -2,7 +2,11 @@ import React, { useRef, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import MandelbrotRenderer from "./MandelbrotRenderer";
 
-interface MandelbrotExplorerProps {}
+interface MandelbrotExplorerProps {
+  initialCenterX?: number;
+  initialCenterY?: number;
+  initialFocusDX?: number;
+}
 
 enum DragMode {
   Move = 1,
@@ -37,8 +41,13 @@ type ZoomHistory = {
 const INITIAL_CENTER_X = 0;
 const INITIAL_CENTER_Y = -0.7;
 const INITIAL_FOCUS_DX = 2.5;
+const INITIAL_ITERATIONS = 200;
 
-const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
+const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = ({
+  initialCenterX,
+  initialCenterY,
+  initialFocusDX,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<null | DragState>(null);
   const [mandelbrot, setMandelbrot] = useState<null | MandelbrotState>(null);
@@ -48,6 +57,23 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
     if (containerRef.current != null) {
       const resDX = containerRef.current.clientWidth;
       const resDY = containerRef.current.clientHeight;
+      const focusDX = initialFocusDX ?? INITIAL_FOCUS_DX;
+
+      setMandelbrot({
+        resDX,
+        resDY,
+        centerX: initialCenterX ?? INITIAL_CENTER_X,
+        centerY: initialCenterY ?? INITIAL_CENTER_Y,
+        focusDX,
+        focusDY: (resDY / resDX) * focusDX,
+        iterations: INITIAL_ITERATIONS,
+      });
+    }
+  }, []);
+
+  function goToStart() {
+    if (mandelbrot != null) {
+      const { resDX, resDY } = mandelbrot;
       const focusDX = INITIAL_FOCUS_DX;
 
       setMandelbrot({
@@ -57,10 +83,10 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
         centerY: INITIAL_CENTER_Y,
         focusDX,
         focusDY: (resDY / resDX) * focusDX,
-        iterations: 100,
+        iterations: INITIAL_ITERATIONS,
       });
     }
-  }, []);
+  }
 
   function onDragStart(ev: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     if (ev.button === 0 || ev.button === 1) {
@@ -85,11 +111,14 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
       if (dragging?.mode === DragMode.Move) {
         const [dragDX, dragDY] = dragD();
         const { resDX, resDY, focusDX, focusDY, centerX, centerY } = mandelbrot;
+        const newCenterX = centerX - (focusDX / resDX) * dragDX;
+        const newCenterY = centerY - (focusDY / resDY) * dragDY;
         setMandelbrot({
           ...mandelbrot,
-          centerX: centerX - (focusDX / resDX) * dragDX,
-          centerY: centerY - (focusDY / resDY) * dragDY,
+          centerX: newCenterX,
+          centerY: newCenterY,
         });
+        setHistory(newCenterX, newCenterY, focusDX);
       }
 
       if (dragging?.mode === DragMode.Zoom) {
@@ -122,13 +151,16 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
           setZoomStack(
             zoomStack.concat([{ centerX, centerY, focusDX, focusDY }])
           );
+          const newCenterX = centerX - focusDX / 2 + startX * ratioX + dx / 2;
+          const newCenterY = centerY - focusDY / 2 + startY * ratioY + dy / 2;
           setMandelbrot({
             ...mandelbrot,
             focusDX: dx,
             focusDY: dy,
-            centerX: centerX - focusDX / 2 + startX * ratioX + dx / 2,
-            centerY: centerY - focusDY / 2 + startY * ratioY + dy / 2,
+            centerX: newCenterX,
+            centerY: newCenterY,
           });
+          setHistory(newCenterX, newCenterY, dx);
         }
       }
 
@@ -164,8 +196,20 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
     }
   }
 
+  function resetZoom() {
+    if (mandelbrot !== null) {
+      setZoomStack([]);
+      goToStart();
+    }
+  }
+
+  function setHistory(x: number, y: number, f: number) {
+    window.history.replaceState(null, "", `#!x=${x}&y=${y}&f=${f}`);
+  }
+
   const [dragDX, dragDY] = dragD();
   const [zoomStartX, zoomStartY, zoomEndX, zoomEndY] = zoomD();
+  const isOnStart = INITIAL_FOCUS_DX == mandelbrot?.focusDX;
 
   return (
     <div className="absolute inset-0">
@@ -213,10 +257,25 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
       {mandelbrot !== null ? (
         <div
           className="
-            absolute inset-x-0 bottom-0 mb-4 ml-4 mr-4 p-2
-            rounded-md bg-black bg-opacity-50 text-white"
+            absolute inset-x-0 bottom-0 p-2
+            flex items-center
+            bg-black bg-opacity-50 text-white"
         >
           Iterations:
+          <button
+            className="ml-2 px-2 rounded-sm bg-blue-500"
+            onClick={() =>
+              setMandelbrot({
+                ...mandelbrot,
+                iterations:
+                  mandelbrot.iterations > 100
+                    ? mandelbrot.iterations - 100
+                    : 10,
+              })
+            }
+          >
+            -100
+          </button>
           <input
             className="ml-2 rounded-sm w-16 text-black p-0 text-center"
             type="number"
@@ -228,18 +287,65 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = () => {
               })
             }
           />
-          {zoomStack.length > 0 ? (
-            <button
-              className="bg-white rounded-sm text-black px-4 float-right"
-              onClick={() => zoomBackOut()}
-            >
-              Zoom back out
-            </button>
-          ) : null}
+          <button
+            className="ml-2 px-2 rounded-sm bg-blue-500"
+            onClick={() =>
+              setMandelbrot({
+                ...mandelbrot,
+                iterations: mandelbrot.iterations + 100,
+              })
+            }
+          >
+            +100
+          </button>
+          <div className="text-xs ml-4">
+            MClick = Drag; LDrag = Zoom; RClick = ZoomOut
+          </div>
+          <div className="flex-grow"></div>
+          <div className="">
+            {!isOnStart ? (
+              <button
+                className="px-2 rounded-sm bg-blue-500"
+                onClick={resetZoom}
+              >
+                Reset zoom
+              </button>
+            ) : null}
+            {zoomStack.length > 0 ? (
+              <button
+                className="ml-2 px-2 rounded-sm bg-blue-500"
+                onClick={zoomBackOut}
+              >
+                Zoom back
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>
   );
 };
 
-ReactDOM.render(<MandelbrotExplorer />, document.getElementById("root"));
+let defaults: MandelbrotExplorerProps = {};
+if (window?.location?.hash) {
+  const queryString = window.location.hash
+    .slice(2)
+    .split("&")
+    .reduce((all, val) => {
+      let [k, v] = val.split("=");
+      let n = parseFloat(v);
+      if (!isNaN(n)) all[k] = n;
+      return all;
+    }, {} as { [key: string]: number });
+
+  defaults = {
+    initialCenterX: queryString?.x,
+    initialCenterY: queryString?.y,
+    initialFocusDX: queryString?.f,
+  };
+}
+
+ReactDOM.render(
+  <MandelbrotExplorer {...defaults} />,
+  document.getElementById("root")
+);
