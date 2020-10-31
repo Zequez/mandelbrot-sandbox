@@ -1,14 +1,14 @@
+const { merge } = require("webpack-merge");
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const path = require("path");
 
-module.exports = {
+let config = {
   entry: "./src/bootstrap.js",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "bootstrap.js",
   },
-  mode: "development",
   module: {
     rules: [
       {
@@ -46,3 +46,12 @@ module.exports = {
     }),
   ],
 };
+
+if (process.env.NODE_ENV === "production") {
+  config = merge(config, {
+    mode: "production",
+    devtool: "source-map",
+  });
+}
+
+module.exports = config;
