@@ -1,6 +1,7 @@
 const { merge } = require("webpack-merge");
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const FaviconsWebpackPlugin = require("favicons-webpack-plugin");
 const path = require("path");
 
 let config = {
@@ -44,6 +45,7 @@ let config = {
       template: "src/index.html",
       filename: "index.html",
     }),
+    new FaviconsWebpackPlugin("./src/icon3.png"),
   ],
 };
 
