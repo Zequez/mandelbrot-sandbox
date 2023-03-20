@@ -45,7 +45,10 @@ let config = {
       template: "src/index.html",
       filename: "index.html",
     }),
-    new FaviconsWebpackPlugin("./src/icon3.png"),
+    new FaviconsWebpackPlugin({
+      logo: "./src/icon3.png",
+      mode: "light",
+    }),
   ],
 };
 

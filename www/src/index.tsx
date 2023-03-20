@@ -53,11 +53,18 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = ({
   const [mandelbrot, setMandelbrot] = useState<null | MandelbrotState>(null);
   const [zoomStack, setZoomStack] = useState<ZoomHistory[]>([]);
 
-  useEffect(() => {
+  useEffect(initializeMandelbrot, []);
+
+  function initializeMandelbrot() {
     if (containerRef.current != null) {
       const resDX = containerRef.current.clientWidth;
       const resDY = containerRef.current.clientHeight;
       const focusDX = initialFocusDX ?? INITIAL_FOCUS_DX;
+
+      if (resDY === 0 || resDX === 0) {
+        setTimeout(initializeMandelbrot, 100);
+        return;
+      }
 
       setMandelbrot({
         resDX,
@@ -69,7 +76,7 @@ const MandelbrotExplorer: React.FC<MandelbrotExplorerProps> = ({
         iterations: INITIAL_ITERATIONS,
       });
     }
-  }, []);
+  }
 
   function goToStart() {
     if (mandelbrot != null) {
